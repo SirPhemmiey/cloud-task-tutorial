@@ -13,7 +13,7 @@ export class BatchService {
     async createFirstBatchTask() {
         //create queue
         const queueName = await this.taskService.createTaskQueue('first-batch-queue');
-
+ 
         //add a task to the queue you created above
         await this.taskService.createTask(queueName, {
             taskName: "first-batch-task",

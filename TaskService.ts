@@ -27,6 +27,10 @@ export class TaskService implements ITaskService {
 
    async createTaskQueue(queueName: string) {
         const parent = this.getQueuePath(queueName);
+        /**
+         * we can control API calls using maxDispatchesPerSecond
+         * Rate limits allows us to define the maximum rate and maximum number of concurrent tasks that can be dispatched by a queue
+         */
         const queue = { name: parent, rateLimits: { maxDispatchesPerSecond: 10 } };
         const [response] = await this.client.createQueue({ parent, queue });
         return response.name;

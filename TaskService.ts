@@ -10,7 +10,7 @@ export interface TaskOptions {
 }
 
 export interface ITaskService {
-    createTaskQueue(queueName: string): Promise<string>;
+    createTaskQueue(queueName: string, opt?: {concurrency?: number, dispatches?: number}): Promise<string>;
     createTask(queueName: string, options: TaskOptions): Promise<string>;
     getTask(taskName: string): Promise<[google.cloud.tasks.v2.ITask, google.cloud.tasks.v2.IGetTaskRequest, {}]>;
     deleteTask(taskName: string): Promise<[google.protobuf.IEmpty, google.cloud.tasks.v2.IDeleteTaskRequest, {}]>
@@ -25,14 +25,23 @@ export class TaskService implements ITaskService {
         return parent;
     }
 
-   async createTaskQueue(queueName: string) {
+   async createTaskQueue(queueName: string, opts?: {concurrency?: number, dispatches: number}) {
         const parent = this.getQueuePath(queueName);
         /**
-         * we can control API calls using maxDispatchesPerSecond
-         * Rate limits allows us to define the maximum rate and maximum number of concurrent 
+         * 1. We can control API calls using maxDispatchesPerSecond
+         * 2. Rate limits allows us to define the maximum rate and maximum number of concurrent 
          * tasks that can be dispatched by a queue
+         * 3. maxConcurrentDispatches sets
          */
-        const queue = { name: parent, rateLimits: { maxDispatchesPerSecond: 10 } };
+        const queue: google.cloud.tasks.v2.IQueue = { name: parent, rateLimits: { 
+            maxDispatchesPerSecond: 10, maxConcurrentDispatches: 30 
+        } };
+        if (opts.concurrency) {
+            queue.rateLimits.maxConcurrentDispatches = opts.concurrency;
+        }
+        if (opts.dispatches) {
+            queue.rateLimits.maxDispatchesPerSecond = opts.dispatches;
+        }
         const [response] = await this.client.createQueue({ parent, queue });
         return response.name;
     }
@@ -69,6 +78,20 @@ export class TaskService implements ITaskService {
         return await this.client.deleteTask({
             name: taskName
         });
+    }
+
+    async pauseQueue(queueName: string) {
+        await this.client.pauseQueue({
+            name: queueName,
+        });
+        console.log('Queue paused');
+    }
+
+    async resumeQueue(queueName: string) {
+        await this.client.resumeQueue({
+            name: queueName,
+        });
+        console.log('Queue resumed');
     }
 
 

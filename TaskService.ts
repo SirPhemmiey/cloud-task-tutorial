@@ -25,8 +25,14 @@ export class TaskService implements ITaskService {
         return parent;
     }
 
+    private getTaskPath(queueName: string, taskName: string) {
+        const taskPath = this.client.taskPath('your-project-id', 'us-central1', queueName, taskName);
+        return taskPath;
+      }
+
    async createTaskQueue(queueName: string, opts?: {concurrency?: number, dispatches: number}) {
         const parent = this.getQueuePath(queueName);
+
         /**
          * 1. We can control API calls using maxDispatchesPerSecond
          * 2. Rate limits allows us to define the maximum rate and maximum number of concurrent 
@@ -48,13 +54,14 @@ export class TaskService implements ITaskService {
 
     async createTask(queueName: string, options: TaskOptions) {
         const parent = this.getQueuePath(queueName);
+        const taskName = this.getTaskPath(queueName, options.taskName);
 
         const task: google.cloud.tasks.v2.ITask = {
-            name: options.taskName,
+            name: taskName,
             httpRequest: {
                 httpMethod: 'POST',
                 url: `${options.url}`,
-                body: Buffer.from(options.data).toString('base64'),
+                body: Buffer.from(JSON.stringify(options.data)).toString('base64'),
             },
             scheduleTime: { //when you want the task to run
                 seconds: Date.now() / 1000

@@ -59,6 +59,9 @@ export class TaskService implements ITaskService {
         const task: google.cloud.tasks.v2.ITask = {
             name: taskName,
             httpRequest: {
+                headers: {
+                    'Content-Type': 'application/json', //use the appropriate content type
+                  },
                 httpMethod: 'POST',
                 url: `${options.url}`,
                 body: Buffer.from(JSON.stringify(options.data)).toString('base64'),
